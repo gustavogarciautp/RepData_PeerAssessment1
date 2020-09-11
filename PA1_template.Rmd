@@ -1,5 +1,5 @@
 ---
-title: "PA1_template"
+title: "Peer Assessment 1"
 author: "Gustavo García"
 date: "10/9/2020"
 output: html_document
@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Load data
+## Loading the data
 ```{r load}
 #Name file downloaded
 name <- "activity.zip"
@@ -20,7 +20,6 @@ if (!file.exists(name)){
   download.file(URL, name, method="curl")
 } 
 
-# Check if folder exists
 if (!file.exists("activity.csv")) { 
   unzip(name) 
 }
@@ -33,7 +32,7 @@ activity<- read.csv("activity.csv")
 
 
 ## 1. Preprocessing the data
-```{r preprocessing}
+```{r preprocessing, results='hide'}
 library(ggplot2)
 library(lubridate)
 activity<- transform(activity, date= as.Date(date, format="%Y-%m-%d"))
@@ -41,22 +40,24 @@ activity<- transform(activity, date= as.Date(date, format="%Y-%m-%d"))
 
 ## 2. Histogram of the total number of steps taken each day
 
-```{r plot1}
-p1<- ggplot(data=activity, aes(x=date, y=steps)) 
-p1 + geom_bar(stat="identity", fill="steelblue")
+```{r plot1, results='hide'}
+p1<- ggplot(data=activity, aes(x=date, y=steps)) + geom_bar(stat="identity", fill="steelblue") + labs(title = "Total number of steps taken each day")
+p1
+ggsave("figure/plot1.png",p1)
 ```
 
 ## 3. Mean and median number of steps taken each day
 
-```{r plot2}
+```{r}
 aggregate(steps~date, activity, FUN = function(x) c(mean = mean(x), median = median(x)))
 ```
 
 ## 4. Time series plot of the average number of steps taken
-```{r plot3}
+```{r plot2, results='hide'}
 df<- aggregate(steps~interval, activity,mean)
-p2<- ggplot(data=df, aes(x=interval, y=steps)) 
-p2 + geom_line()
+p2<- ggplot(data=df, aes(x=interval, y=steps))+ geom_line()+ labs(title = "Time series plot of the average number of steps taken", y="Average number of steps")
+p2
+ggsave("figure/plot2.png",p2)
 ```
 
 ## 5. The 5-minute interval that, on average, contains the maximum number of steps
@@ -71,18 +72,19 @@ df[which.max(df$steps),]
 sum(!complete.cases(activity))
 ```
 
-2. Estrategy
+2. Estrategy: Use the mean for that 5-minute interval
 
 ```{r}
 NASteps<- which(is.na(activity$steps))
-activity[NASteps,"steps"]<- sapply(activity[NASteps,"interval"],                                    function(x) (df[which(df$interval==x),"steps"]))
+activity[NASteps,"steps"]<- sapply(activity[NASteps,"interval"],function(x) (df[which(df$interval==x),"steps"]))
 ```
 
 ## 7. Histogram of the total number of steps taken each day after missing values are imputed
 
-```{r plot4}
-p3<- ggplot(data=activity, aes(x=date, y=steps)) 
-p3 + geom_bar(stat="identity", fill="steelblue")
+```{r plot3}
+p3<- ggplot(data=activity, aes(x=date, y=steps))+geom_bar(stat="identity", fill="steelblue") + labs(title="Total number of steps taken each day")
+p3
+ggsave("figure/plot3.png",p3)
 ```
 
 Mean and median number of steps taken each day
@@ -92,7 +94,7 @@ aggregate(steps~date, activity, FUN = function(x) c(mean = mean(x), median = med
 ```
 ## 8. Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
 
-```{r plot5}
+```{r plot4}
 weektype <- function(date){
   if (weekdays(date) %in% c("Saturday","sunday","sabado","domingo"))
     type<- "weekend"
@@ -103,6 +105,7 @@ weektype <- function(date){
 }
 activity$type<- factor(sapply(activity$date, weektype))
 df2<- aggregate(steps~interval+type, activity,mean)
-p2<- ggplot(data=df2, aes(x=interval, y= steps)) 
-p2 + facet_wrap(type~., nrow=2, ncol=1)+ geom_line()
+p4<- ggplot(data=df2, aes(x=interval, y= steps))+facet_wrap(type~., nrow=2, ncol=1)+ geom_line()
+p4
+ggsave("figure/plot4.png",p4)
 ```
