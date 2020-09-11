@@ -1,25 +1,108 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "PA1_template"
+author: "Gustavo García"
+date: "10/9/2020"
+output: html_document
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
-## Loading and preprocessing the data
+## Load data
+```{r load}
+#Name file downloaded
+name <- "activity.zip"
+
+# Check if file already exists
+if (!file.exists(name)){
+  URL <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+  download.file(URL, name, method="curl")
+} 
+
+# Check if folder exists
+if (!file.exists("activity.csv")) { 
+  unzip(name) 
+}
+```
+
+## Reading the data
+```{r read}
+activity<- read.csv("activity.csv")
+```
 
 
+## 1. Preprocessing the data
+```{r preprocessing}
+library(ggplot2)
+library(lubridate)
+activity<- transform(activity, date= as.Date(date, format="%Y-%m-%d"))
+```
 
-## What is mean total number of steps taken per day?
+## 2. Histogram of the total number of steps taken each day
 
+```{r plot1}
+p1<- ggplot(data=activity, aes(x=date, y=steps)) 
+p1 + geom_bar(stat="identity", fill="steelblue")
+```
 
+## 3. Mean and median number of steps taken each day
 
-## What is the average daily activity pattern?
+```{r plot2}
+aggregate(steps~date, activity, FUN = function(x) c(mean = mean(x), median = median(x)))
+```
 
+## 4. Time series plot of the average number of steps taken
+```{r plot3}
+df<- aggregate(steps~interval, activity,mean)
+p2<- ggplot(data=df, aes(x=interval, y=steps)) 
+p2 + geom_line()
+```
 
+## 5. The 5-minute interval that, on average, contains the maximum number of steps
+```{r}
+df[which.max(df$steps),]
+```
 
-## Imputing missing values
+## 6. Code to describe and show a strategy for imputing missing data
 
+1.  Total number of missing values in the dataset
+```{r}
+sum(!complete.cases(activity))
+```
 
+2. Estrategy
 
-## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+NASteps<- which(is.na(activity$steps))
+activity[NASteps,"steps"]<- sapply(activity[NASteps,"interval"],                                    function(x) (df[which(df$interval==x),"steps"]))
+```
+
+## 7. Histogram of the total number of steps taken each day after missing values are imputed
+
+```{r plot4}
+p3<- ggplot(data=activity, aes(x=date, y=steps)) 
+p3 + geom_bar(stat="identity", fill="steelblue")
+```
+
+Mean and median number of steps taken each day
+
+```{r}
+aggregate(steps~date, activity, FUN = function(x) c(mean = mean(x), median = median(x)))
+```
+## 8. Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+
+```{r plot5}
+weektype <- function(date){
+  if (weekdays(date) %in% c("Saturday","sunday","sabado","domingo"))
+    type<- "weekend"
+  else{
+    type<- "weekday"
+  }
+   type
+}
+activity$type<- factor(sapply(activity$date, weektype))
+df2<- aggregate(steps~interval+type, activity,mean)
+p2<- ggplot(data=df2, aes(x=interval, y= steps)) 
+p2 + facet_wrap(type~., nrow=2, ncol=1)+ geom_line()
+```
